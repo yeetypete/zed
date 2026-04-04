@@ -1074,11 +1074,12 @@ RUN sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1\${{PATH:-\3}}/g' /etc/profile || true
             .filter_map(|mount| {
                 if let Some(mount_type) = &mount.mount_type
                     && mount_type.to_lowercase() == "volume"
+                    && let Some(source) = &mount.source
                 {
                     Some((
-                        mount.source.clone(),
+                        source.clone(),
                         DockerComposeVolume {
-                            name: mount.source.clone(),
+                            name: source.clone(),
                         },
                     ))
                 } else {
@@ -1731,8 +1732,8 @@ RUN sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1\${PATH:-\3}/g' /etc/profile || true
         };
 
         Ok(MountDefinition {
-            source: self.local_workspace_folder(),
-            target: format!("/workspaces/{}", project_directory_name.display()),
+            source: Some(self.local_workspace_folder()),
+            target: Some(format!("/workspaces/{}", project_directory_name.display())),
             mount_type: None,
         })
     }
@@ -3563,8 +3564,8 @@ ENV DOCKER_BUILDKIT=1
                         ])),
                         volumes: vec![
                             MountDefinition {
-                                source: "dind-var-lib-docker-42dad4b4ca7b8ced".to_string(),
-                                target: "/var/lib/docker".to_string(),
+                                source: Some("dind-var-lib-docker-42dad4b4ca7b8ced".to_string()),
+                                target: Some("/var/lib/docker".to_string()),
                                 mount_type: Some("volume".to_string())
                             }
                         ],
@@ -4444,8 +4445,8 @@ chmod +x ./install.sh
                                     additional_contexts: None,
                                 }),
                                 volumes: vec![MountDefinition {
-                                    source: "../..".to_string(),
-                                    target: "/workspaces".to_string(),
+                                    source: Some("../..".to_string()),
+                                    target: Some("/workspaces".to_string()),
                                     mount_type: Some("bind".to_string()),
                                 }],
                                 network_mode: Some("service:db".to_string()),
@@ -4457,8 +4458,8 @@ chmod +x ./install.sh
                             DockerComposeService {
                                 image: Some("postgres:14.1".to_string()),
                                 volumes: vec![MountDefinition {
-                                    source: "postgres-data".to_string(),
-                                    target: "/var/lib/postgresql/data".to_string(),
+                                    source: Some("postgres-data".to_string()),
+                                    target: Some("/var/lib/postgresql/data".to_string()),
                                     mount_type: Some("volume".to_string()),
                                 }],
                                 env_file: Some(vec![".env".to_string()]),
