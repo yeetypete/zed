@@ -60,30 +60,34 @@ pub(crate) enum ShutdownAction {
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MountDefinition {
-    pub(crate) source: String,
-    pub(crate) target: String,
+    #[serde(default)]
+    pub(crate) source: Option<String>,
+    #[serde(default)]
+    pub(crate) target: Option<String>,
     #[serde(rename = "type")]
     pub(crate) mount_type: Option<String>,
 }
 
 impl Display for MountDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let source = self.source.clone().unwrap_or_default();
+        let target = self.target.clone().unwrap_or_default();
         write!(
             f,
             "type={},source={},target={},consistency=cached",
             self.mount_type.clone().unwrap_or_else(|| {
-                if self.source.starts_with('/')
-                    || self.source.starts_with("\\\\")
-                    || self.source.get(1..3) == Some(":\\")
-                    || self.source.get(1..3) == Some(":/")
+                if source.starts_with('/')
+                    || source.starts_with("\\\\")
+                    || source.get(1..3) == Some(":\\")
+                    || source.get(1..3) == Some(":/")
                 {
                     "bind".to_string()
                 } else {
                     "volume".to_string()
                 }
             }),
-            self.source,
-            self.target
+            source,
+            target
         )
     }
 }
@@ -424,7 +428,6 @@ where
     D: serde::Deserializer<'de>,
 {
     use serde::Deserialize;
-    use serde::de::Error;
 
     #[derive(Deserialize)]
     #[serde(untagged)]
@@ -454,11 +457,6 @@ where
                 }
             }
 
-            let source = source
-                .ok_or_else(|| D::Error::custom(format!("mount string missing 'source': {}", s)))?;
-            let target = target
-                .ok_or_else(|| D::Error::custom(format!("mount string missing 'target': {}", s)))?;
-
             MountDefinition {
                 source,
                 target,
@@ -477,7 +475,6 @@ where
     D: serde::Deserializer<'de>,
 {
     use serde::Deserialize;
-    use serde::de::Error;
 
     #[derive(Deserialize)]
     #[serde(untagged)]
@@ -508,13 +505,6 @@ where
                         }
                     }
                 }
-
-                let source = source.ok_or_else(|| {
-                    D::Error::custom(format!("mount string missing 'source': {}", s))
-                })?;
-                let target = target.ok_or_else(|| {
-                    D::Error::custom(format!("mount string missing 'target': {}", s))
-                })?;
 
                 mounts.push(MountDefinition {
                     source,
@@ -880,8 +870,8 @@ mod test {
                 ])),
                 container_user: Some("myUser".to_string()),
                 mounts: Some(vec![MountDefinition {
-                    source: "/localfolder/app".to_string(),
-                    target: "/workspaces/app".to_string(),
+                    source: Some("/localfolder/app".to_string()),
+                    target: Some("/workspaces/app".to_string()),
                     mount_type: Some("volume".to_string()),
                 }]),
                 run_args: Some(vec!["-c".to_string(), "some_command".to_string()]),
@@ -889,8 +879,8 @@ mod test {
                 override_command: Some(true),
                 workspace_folder: Some("/workspaces".to_string()),
                 workspace_mount: Some(MountDefinition {
-                    source: "/app".to_string(),
-                    target: "/workspaces/app".to_string(),
+                    source: Some("/app".to_string()),
+                    target: Some("/workspaces/app".to_string()),
                     mount_type: Some("bind".to_string())
                 }),
                 customizations: Some(ZedCustomizationsWrapper {
@@ -1323,13 +1313,13 @@ mod test {
                 container_user: Some("myUser".to_string()),
                 mounts: Some(vec![
                     MountDefinition {
-                        source: "/localfolder/app".to_string(),
-                        target: "/workspaces/app".to_string(),
+                        source: Some("/localfolder/app".to_string()),
+                        target: Some("/workspaces/app".to_string()),
                         mount_type: Some("volume".to_string()),
                     },
                     MountDefinition {
-                        source: "dev-containers-cli-bashhistory".to_string(),
-                        target: "/home/node/commandhistory".to_string(),
+                        source: Some("dev-containers-cli-bashhistory".to_string()),
+                        target: Some("/home/node/commandhistory".to_string()),
                         mount_type: None,
                     }
                 ]),
@@ -1338,8 +1328,8 @@ mod test {
                 override_command: Some(true),
                 workspace_folder: Some("/workspaces".to_string()),
                 workspace_mount: Some(MountDefinition {
-                    source: "/folder".to_string(),
-                    target: "/workspace".to_string(),
+                    source: Some("/folder".to_string()),
+                    target: Some("/workspace".to_string()),
                     mount_type: Some("bind".to_string())
                 }),
                 build: Some(ContainerBuild {
@@ -1363,8 +1353,8 @@ mod test {
     #[test]
     fn mount_definition_should_use_bind_type_for_unix_absolute_paths() {
         let mount = MountDefinition {
-            source: "/home/user/project".to_string(),
-            target: "/workspaces/project".to_string(),
+            source: Some("/home/user/project".to_string()),
+            target: Some("/workspaces/project".to_string()),
             mount_type: None,
         };
 
@@ -1379,8 +1369,8 @@ mod test {
     #[test]
     fn mount_definition_should_use_bind_type_for_windows_unc_paths() {
         let mount = MountDefinition {
-            source: "\\\\server\\share\\project".to_string(),
-            target: "/workspaces/project".to_string(),
+            source: Some("\\\\server\\share\\project".to_string()),
+            target: Some("/workspaces/project".to_string()),
             mount_type: None,
         };
 
@@ -1395,8 +1385,8 @@ mod test {
     #[test]
     fn mount_definition_should_use_bind_type_for_windows_absolute_paths() {
         let mount = MountDefinition {
-            source: "C:\\Users\\mrg\\cli".to_string(),
-            target: "/workspaces/cli".to_string(),
+            source: Some("C:\\Users\\mrg\\cli".to_string()),
+            target: Some("/workspaces/cli".to_string()),
             mount_type: None,
         };
 

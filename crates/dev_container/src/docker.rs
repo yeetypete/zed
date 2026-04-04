@@ -993,8 +993,8 @@ mod test {
                         ),
                         volumes: vec![MountDefinition {
                             mount_type: Some("bind".to_string()),
-                            source: "/path/to".to_string(),
-                            target: "/workspaces".to_string(),
+                            source: Some("/path/to".to_string()),
+                            target: Some("/workspaces".to_string()),
                         }],
                         network_mode: Some("service:db".to_string()),
 
@@ -1023,8 +1023,8 @@ mod test {
                         image: Some("postgres:14.1".to_string()),
                         volumes: vec![MountDefinition {
                             mount_type: Some("volume".to_string()),
-                            source: "postgres-data".to_string(),
-                            target: "/var/lib/postgresql/data".to_string(),
+                            source: Some("postgres-data".to_string()),
+                            target: Some("/var/lib/postgresql/data".to_string()),
                         }],
                         ..Default::default()
                     },
