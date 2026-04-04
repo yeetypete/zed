@@ -62,8 +62,7 @@ pub(crate) enum ShutdownAction {
 pub(crate) struct MountDefinition {
     #[serde(default)]
     pub(crate) source: Option<String>,
-    #[serde(default)]
-    pub(crate) target: Option<String>,
+    pub(crate) target: String,
     #[serde(rename = "type")]
     pub(crate) mount_type: Option<String>,
 }
@@ -71,7 +70,6 @@ pub(crate) struct MountDefinition {
 impl Display for MountDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let source = self.source.clone().unwrap_or_default();
-        let target = self.target.clone().unwrap_or_default();
         write!(
             f,
             "type={},source={},target={},consistency=cached",
@@ -87,7 +85,7 @@ impl Display for MountDefinition {
                 }
             }),
             source,
-            target
+            self.target
         )
     }
 }
@@ -427,6 +425,7 @@ fn deserialize_mount_definition<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
+    use serde::de::Error;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -457,6 +456,9 @@ where
                 }
             }
 
+            let target = target
+                .ok_or_else(|| D::Error::custom(format!("mount string missing 'target': {}", s)))?;
+
             MountDefinition {
                 source,
                 target,
@@ -474,6 +476,7 @@ fn deserialize_mount_definitions<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
+    use serde::de::Error;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -505,6 +508,10 @@ where
                         }
                     }
                 }
+
+                let target = target.ok_or_else(|| {
+                    D::Error::custom(format!("mount string missing 'target': {}", s))
+                })?;
 
                 mounts.push(MountDefinition {
                     source,
@@ -871,7 +878,7 @@ mod test {
                 container_user: Some("myUser".to_string()),
                 mounts: Some(vec![MountDefinition {
                     source: Some("/localfolder/app".to_string()),
-                    target: Some("/workspaces/app".to_string()),
+                    target: "/workspaces/app".to_string(),
                     mount_type: Some("volume".to_string()),
                 }]),
                 run_args: Some(vec!["-c".to_string(), "some_command".to_string()]),
@@ -880,7 +887,7 @@ mod test {
                 workspace_folder: Some("/workspaces".to_string()),
                 workspace_mount: Some(MountDefinition {
                     source: Some("/app".to_string()),
-                    target: Some("/workspaces/app".to_string()),
+                    target: "/workspaces/app".to_string(),
                     mount_type: Some("bind".to_string())
                 }),
                 customizations: Some(ZedCustomizationsWrapper {
@@ -1314,12 +1321,12 @@ mod test {
                 mounts: Some(vec![
                     MountDefinition {
                         source: Some("/localfolder/app".to_string()),
-                        target: Some("/workspaces/app".to_string()),
+                        target: "/workspaces/app".to_string(),
                         mount_type: Some("volume".to_string()),
                     },
                     MountDefinition {
                         source: Some("dev-containers-cli-bashhistory".to_string()),
-                        target: Some("/home/node/commandhistory".to_string()),
+                        target: "/home/node/commandhistory".to_string(),
                         mount_type: None,
                     }
                 ]),
@@ -1329,7 +1336,7 @@ mod test {
                 workspace_folder: Some("/workspaces".to_string()),
                 workspace_mount: Some(MountDefinition {
                     source: Some("/folder".to_string()),
-                    target: Some("/workspace".to_string()),
+                    target: "/workspace".to_string(),
                     mount_type: Some("bind".to_string())
                 }),
                 build: Some(ContainerBuild {
@@ -1354,7 +1361,7 @@ mod test {
     fn mount_definition_should_use_bind_type_for_unix_absolute_paths() {
         let mount = MountDefinition {
             source: Some("/home/user/project".to_string()),
-            target: Some("/workspaces/project".to_string()),
+            target: "/workspaces/project".to_string(),
             mount_type: None,
         };
 
@@ -1370,7 +1377,7 @@ mod test {
     fn mount_definition_should_use_bind_type_for_windows_unc_paths() {
         let mount = MountDefinition {
             source: Some("\\\\server\\share\\project".to_string()),
-            target: Some("/workspaces/project".to_string()),
+            target: "/workspaces/project".to_string(),
             mount_type: None,
         };
 
@@ -1386,7 +1393,7 @@ mod test {
     fn mount_definition_should_use_bind_type_for_windows_absolute_paths() {
         let mount = MountDefinition {
             source: Some("C:\\Users\\mrg\\cli".to_string()),
-            target: Some("/workspaces/cli".to_string()),
+            target: "/workspaces/cli".to_string(),
             mount_type: None,
         };
 
