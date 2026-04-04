@@ -1742,7 +1742,7 @@ RUN sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1\${PATH:-\3}/g' /etc/profile || true
 
         Ok(MountDefinition {
             source: Some(self.local_workspace_folder()),
-            target: Some(format!("/workspaces/{}", project_directory_name.display())),
+            target: format!("/workspaces/{}", project_directory_name.display()),
             mount_type: None,
         })
     }
@@ -3582,7 +3582,7 @@ ENV DOCKER_BUILDKIT=1
                         volumes: vec![
                             MountDefinition {
                                 source: Some("dind-var-lib-docker-42dad4b4ca7b8ced".to_string()),
-                                target: Some("/var/lib/docker".to_string()),
+                                target: "/var/lib/docker".to_string(),
                                 mount_type: Some("volume".to_string())
                             }
                         ],
@@ -4463,7 +4463,7 @@ chmod +x ./install.sh
                                 }),
                                 volumes: vec![MountDefinition {
                                     source: Some("../..".to_string()),
-                                    target: Some("/workspaces".to_string()),
+                                    target: "/workspaces".to_string(),
                                     mount_type: Some("bind".to_string()),
                                 }],
                                 network_mode: Some("service:db".to_string()),
@@ -4476,7 +4476,7 @@ chmod +x ./install.sh
                                 image: Some("postgres:14.1".to_string()),
                                 volumes: vec![MountDefinition {
                                     source: Some("postgres-data".to_string()),
-                                    target: Some("/var/lib/postgresql/data".to_string()),
+                                    target: "/var/lib/postgresql/data".to_string(),
                                     mount_type: Some("volume".to_string()),
                                 }],
                                 env_file: Some(vec![".env".to_string()]),
