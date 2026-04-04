@@ -69,24 +69,23 @@ pub(crate) struct MountDefinition {
 
 impl Display for MountDefinition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let source = self.source.clone().unwrap_or_default();
-        write!(
-            f,
-            "type={},source={},target={},consistency=cached",
-            self.mount_type.clone().unwrap_or_else(|| {
+        let mount_type = self.mount_type.clone().unwrap_or_else(|| {
+            if let Some(source) = &self.source {
                 if source.starts_with('/')
                     || source.starts_with("\\\\")
                     || source.get(1..3) == Some(":\\")
                     || source.get(1..3) == Some(":/")
                 {
-                    "bind".to_string()
-                } else {
-                    "volume".to_string()
+                    return "bind".to_string();
                 }
-            }),
-            source,
-            self.target
-        )
+            }
+            "volume".to_string()
+        });
+        write!(f, "type={}", mount_type)?;
+        if let Some(source) = &self.source {
+            write!(f, ",source={}", source)?;
+        }
+        write!(f, ",target={},consistency=cached", self.target)
     }
 }
 
@@ -1403,5 +1402,18 @@ mod test {
             rendered.starts_with("type=bind,"),
             "Expected mount type 'bind' for Windows absolute path, but got: {rendered}"
         );
+    }
+
+    #[test]
+    fn mount_definition_should_omit_source_when_none() {
+        let mount = MountDefinition {
+            source: None,
+            target: "/tmp".to_string(),
+            mount_type: Some("tmpfs".to_string()),
+        };
+
+        let rendered = mount.to_string();
+
+        assert_eq!(rendered, "type=tmpfs,target=/tmp,consistency=cached");
     }
 }
