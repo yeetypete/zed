@@ -421,12 +421,8 @@ where
                 values
                     .iter()
                     .filter_map(|v| {
-                        let parts: Vec<&str> = v.split("=").collect();
-                        if parts.len() != 2 {
-                            None
-                        } else {
-                            Some((parts[0].to_string(), parts[1].to_string()))
-                        }
+                        let (key, value) = v.split_once('=')?;
+                        Some((key.to_string(), value.to_string()))
                     })
                     .collect(),
             ))
@@ -554,6 +550,22 @@ mod test {
 
         let map = config.env_as_map().unwrap();
         assert_eq!(map.get("COMPLEX").unwrap(), "key=val other>=1.0");
+    }
+
+    #[test]
+    fn should_parse_simple_label() {
+        let json = r#"{"volumes": [], "labels": ["com.example.key=value"]}"#;
+        let service: DockerComposeService = serde_json_lenient::from_str(json).unwrap();
+        let labels = service.labels.unwrap();
+        assert_eq!(labels.get("com.example.key").unwrap(), "value");
+    }
+
+    #[test]
+    fn should_parse_label_with_equals_in_value() {
+        let json = r#"{"volumes": [], "labels": ["com.example.key=value=with=equals"]}"#;
+        let service: DockerComposeService = serde_json_lenient::from_str(json).unwrap();
+        let labels = service.labels.unwrap();
+        assert_eq!(labels.get("com.example.key").unwrap(), "value=with=equals");
     }
 
     #[test]
