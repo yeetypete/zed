@@ -871,7 +871,16 @@ RUN sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1\${{PATH:-\3}}/g' /etc/profile || true
                         labels: None,
                         build: Some(DockerComposeServiceBuild {
                             context: Some(
-                                features_build_info.empty_context_dir.display().to_string(),
+                                main_service
+                                    .build
+                                    .as_ref()
+                                    .and_then(|b| b.context.clone())
+                                    .unwrap_or_else(|| {
+                                        features_build_info
+                                            .empty_context_dir
+                                            .display()
+                                            .to_string()
+                                    }),
                             ),
                             dockerfile: Some(dockerfile_path.display().to_string()),
                             args: Some(build_args),
