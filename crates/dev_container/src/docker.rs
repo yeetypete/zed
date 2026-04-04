@@ -1139,6 +1139,51 @@ mod test {
     }
 
     #[test]
+    fn should_deserialize_compose_with_missing_volumes_field() {
+        let given_config = r#"
+        {
+            "name": "devcontainer",
+            "services": {
+                "sidecar": {
+                    "image": "ros:jazzy-ros-core"
+                }
+            }
+        }
+        "#;
+
+        let config: DockerComposeConfig = serde_json_lenient::from_str(given_config).unwrap();
+        let service = config.services.get("sidecar").unwrap();
+        assert!(service.volumes.is_empty());
+    }
+
+    #[test]
+    fn should_deserialize_compose_volume_without_source() {
+        let given_config = r#"
+        {
+            "name": "devcontainer",
+            "services": {
+                "app": {
+                    "image": "ubuntu:24.04",
+                    "volumes": [
+                        {
+                            "type": "tmpfs",
+                            "target": "/tmp"
+                        }
+                    ]
+                }
+            }
+        }
+        "#;
+
+        let config: DockerComposeConfig = serde_json_lenient::from_str(given_config).unwrap();
+        let service = config.services.get("app").unwrap();
+        assert_eq!(service.volumes.len(), 1);
+        assert_eq!(service.volumes[0].source, None);
+        assert_eq!(service.volumes[0].target, Some("/tmp".to_string()));
+        assert_eq!(service.volumes[0].mount_type, Some("tmpfs".to_string()));
+    }
+
+    #[test]
     fn should_deserialize_inspect_without_labels() {
         let given_config = r#"
         {
