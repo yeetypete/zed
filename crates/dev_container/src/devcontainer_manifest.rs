@@ -2250,7 +2250,8 @@ chmod +x ./install.sh
 fn dockerfile_alias(dockerfile_content: &str) -> Option<String> {
     dockerfile_content
         .lines()
-        .find(|line| line.starts_with("FROM"))
+        .filter(|line| line.starts_with("FROM"))
+        .last()
         .and_then(|line| {
             let words: Vec<&str> = line.split(" ").collect();
             if words.len() > 2 && words[words.len() - 2].to_lowercase() == "as" {
@@ -2265,10 +2266,17 @@ fn dockerfile_inject_alias(dockerfile_content: &str, alias: &str) -> String {
     if dockerfile_alias(dockerfile_content).is_some() {
         dockerfile_content.to_string()
     } else {
+        let last_from_idx = dockerfile_content
+            .lines()
+            .enumerate()
+            .filter(|(_, line)| line.starts_with("FROM"))
+            .last()
+            .map(|(idx, _)| idx);
         dockerfile_content
             .lines()
-            .map(|line| {
-                if line.starts_with("FROM") {
+            .enumerate()
+            .map(|(idx, line)| {
+                if Some(idx) == last_from_idx {
                     format!("{} AS {}", line, alias)
                 } else {
                     line.to_string()
