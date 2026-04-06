@@ -424,8 +424,8 @@ fn deserialize_mount_definition<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    use serde::de::Error;
     use serde::Deserialize;
+    use serde::de::Error;
 
     #[derive(Deserialize)]
     #[serde(untagged)]
@@ -475,8 +475,8 @@ fn deserialize_mount_definitions<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    use serde::de::Error;
     use serde::Deserialize;
+    use serde::de::Error;
 
     #[derive(Deserialize)]
     #[serde(untagged)]
