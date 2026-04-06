@@ -876,10 +876,7 @@ RUN sed -i -E 's/((^|\s)PATH=)([^\$]*)$/\1\${{PATH:-\3}}/g' /etc/profile || true
                                     .as_ref()
                                     .and_then(|b| b.context.clone())
                                     .unwrap_or_else(|| {
-                                        features_build_info
-                                            .empty_context_dir
-                                            .display()
-                                            .to_string()
+                                        features_build_info.empty_context_dir.display().to_string()
                                     }),
                             ),
                             dockerfile: Some(dockerfile_path.display().to_string()),
