@@ -2113,9 +2113,27 @@ impl RemoteServerProjects {
             let Some(app_state) = app_state.upgrade() else {
                 return;
             };
+            // VS Code allows `workspaceFolder` to point to a VS Code
+            // `.code-workspace` file instead of a directory. Zed does
+            // not yet support `.code-workspace` files. For now, open the
+            // parent directory of the `.code-workspace` file to maintain
+            // compatibility with VS Code devcontainer configurations that
+            // use this feature. TODO: remove once support for
+            // `.code-workspace` files is implemented.
+            let starting_path = PathBuf::from(starting_dir);
+            let open_path = if starting_path.extension().and_then(|ext| ext.to_str())
+                == Some("code-workspace")
+            {
+                starting_path
+                    .parent()
+                    .map(|parent| parent.to_path_buf())
+                    .unwrap_or(starting_path)
+            } else {
+                starting_path
+            };
             let result = open_remote_project(
                 Connection::DevContainer(dev_container_connection).into(),
-                vec![starting_dir].into_iter().map(PathBuf::from).collect(),
+                vec![open_path],
                 app_state,
                 OpenOptions {
                     requesting_window: replace_window,
